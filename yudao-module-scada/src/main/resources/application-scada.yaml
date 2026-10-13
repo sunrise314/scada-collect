@@ -1,0 +1,72 @@
+# SCADA 模块独立配置
+# 引入方式：主 application.yaml 加 spring.profiles.include=scada
+# 或在生产环境 SPRING_PROFILES_ACTIVE 里追加 scada
+scada:
+  # 采集总开关：false 时 ScadaCollectJob 不启动调度器，常用于灰度发布或演练停采
+  collect-enabled: true
+  # ReplayBuffer 本地缓存路径（RocksDB）
+  replay-path: ./data/scada-replay
+  # 缓存上限，100 万条约 200MB，工业现场够用
+  replay-max-keys: 1000000
+  thread-pool:
+    core-size: 8
+    max-size: 32
+    queue-size: 200
+
+  # TDengine 时序库配置（独立数据源，不走 yudao 主 HikariPool）
+  tdengine:
+    url: jdbc:TAOS-RS://${SCADA_TDENGINE_HOST:127.0.0.1}:${SCADA_TDENGINE_PORT:6041}/scada
+    username: ${SCADA_TDENGINE_USER:root}
+    password: ${SCADA_TDENGINE_PASS:taosdata}
+    driver-class-name: com.taosdata.jdbc.rs.RestfulDriver
+    max-pool-size: 10
+    # 超表名，建库语句 scada.tdengine.database 不存在时自动创建
+    database: scada
+
+  # Modbus TCP 默认参数（仅当 device.conn_params_json 缺省时使用）
+  modbus:
+    default-port: 502
+    timeout-ms: 3000
+
+  # MQTT Sparkplug 订阅默认参数
+  mqtt:
+    broker-url: ${SCADA_MQTT_URL:tcp://127.0.0.1:1883}
+    client-id-prefix: scada-yudao-
+    qos: 1
+    keep-alive-interval: 60
+
+  # OPC UA 默认参数
+  opcua:
+    default-security-policy: NONE
+    default-session-timeout: 60000
+    # 订阅发布间隔（毫秒）
+    publishing-interval: 500
+
+  # S7 默认参数
+  s7:
+    default-rack: 0
+    default-slot: 1
+    timeout-ms: 3000
+
+  # SSE 推送配置
+  sse:
+    # 单连接超时（毫秒），30 分钟
+    emitter-timeout-ms: 1800000
+    # 聚合 flush 间隔（毫秒），1Hz
+    flush-interval-ms: 1000
+    # 客户端最大订阅点位数，防止单连接吃满推送内存
+    max-points-per-client: 500
+
+  # 设备心跳判定（DeviceConnectionManager 使用）
+  heartbeat:
+    # 心跳超时阈值（秒），超过即判定断线
+    cutoff-seconds: 30
+    # 守护线程扫描间隔（秒）
+    scan-interval-seconds: 60
+
+  # 告警配置
+  alarm:
+    # 启动时全量加载规则，运行期变更触发 reload
+    auto-load-on-start: true
+    # 未确认事件保留天数，超过自动归档
+    retain-days: 90

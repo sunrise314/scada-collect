@@ -1,0 +1,32 @@
+# Maven
+target/
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Local data
+data/
+*.db
+*.rocksdb
+
+# Secrets (production overrides)
+application-local.yaml
+application-prod.yaml
+.env
